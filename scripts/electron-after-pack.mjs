@@ -20,6 +20,31 @@
 import { existsSync, renameSync, rmSync } from "fs";
 import { join } from "path";
 
+// Windows Defender (or another AV/indexer) frequently holds a transient lock
+// on files right after electron-builder copies them, which turns this rename
+// into a flaky EPERM instead of a real failure. A short retry-with-backoff
+// clears it almost every time without requiring the user to close anything.
+const RETRY_DELAYS_MS = [200, 500, 1000, 2000, 3000];
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function withEpermRetry(fn, label) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      fn();
+      return;
+    } catch (err) {
+      if (err?.code !== "EPERM" && err?.code !== "EBUSY") throw err;
+      if (attempt >= RETRY_DELAYS_MS.length) throw err;
+      const delay = RETRY_DELAYS_MS[attempt];
+      console.log(
+        `[afterPack] ${label} hit ${err.code}, retrying in ${delay}ms (attempt ${attempt + 1}/${RETRY_DELAYS_MS.length})`
+      );
+      await sleep(delay);
+    }
+  }
+}
+
 export default async function afterPack(context) {
   const standaloneDir = join(
     context.appOutDir,
@@ -37,9 +62,15 @@ export default async function afterPack(context) {
   }
 
   if (existsSync(nodeModules)) {
-    rmSync(nodeModules, { recursive: true, force: true });
+    await withEpermRetry(
+      () => rmSync(nodeModules, { recursive: true, force: true }),
+      "rmSync(node_modules)"
+    );
   }
-  renameSync(serverModules, nodeModules);
+  await withEpermRetry(
+    () => renameSync(serverModules, nodeModules),
+    "renameSync(_server_modules → node_modules)"
+  );
   console.log(
     "[afterPack] renamed packaged _server_modules → node_modules"
   );
