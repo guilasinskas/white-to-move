@@ -1,6 +1,6 @@
 {
   "name": "white-to-move",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "description": "Personal chess workbench — analyze games, study openings and keep notes, all running locally on your machine. Powered by Stockfish.",
   "author": {

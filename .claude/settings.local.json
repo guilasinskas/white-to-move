@@ -135,7 +135,10 @@
       "Read(//c/Users/Usuario/AppData/Local/Temp/claude/c--Users-Usuario-Documents-Programming-Chesskit/cc7d37d3-d446-4d27-8919-bc53777f97cb/scratchpad/**)",
       "Bash(curl -s -X DELETE \"http://localhost:3000/api/exercises?id=2\")",
       "Bash(curl -s -X PUT http://localhost:3000/api/exercises?id=3 -H 'Content-Type: application/json' -d '{ *)",
-      "Bash(curl -s -X PUT http://localhost:3000/api/exercises?id=4 -H 'Content-Type: application/json' -d '{ *)"
+      "Bash(curl -s -X PUT http://localhost:3000/api/exercises?id=4 -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(git fetch *)",
+      "Bash(gh repo *)",
+      "Bash(curl -s https://api.github.com/repos/guilasinskas/white-to-move/releases)"
     ],
     "additionalDirectories": [
       "\\tmp"
