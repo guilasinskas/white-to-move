@@ -22,6 +22,7 @@ const NAV_LINKS = [
     icon: "mdi:book-open-page-variant-outline",
     href: "/openings",
   },
+  { text: "Exercises", icon: "mdi:target", href: "/exercises" },
   { text: "Stats", icon: "mdi:chart-bar", href: "/stats" },
   { text: "Notes", icon: "mdi:note-text-outline", href: "/notes" },
 ];

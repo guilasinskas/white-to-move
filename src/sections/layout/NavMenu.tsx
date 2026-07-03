@@ -17,6 +17,7 @@ const MenuOptions = [
   { text: "Analysis", icon: "streamline:magnifying-glass-solid", href: "/" },
   { text: "Database", icon: "streamline:database", href: "/database" },
   { text: "Openings", icon: "streamline:book-reading", href: "/openings" },
+  { text: "Exercises", icon: "mdi:target", href: "/exercises" },
   { text: "Stats", icon: "mdi:chart-bar", href: "/stats" },
   {
     text: "Notes",
@@ -41,8 +42,7 @@ export default function NavMenu({ open, onClose }: Props) {
         <Box sx={{ px: 2, py: 1, mb: "4px" }}>
           <Typography
             sx={{
-              fontFamily:
-                "var(--cc-font-body)",
+              fontFamily: "var(--cc-font-body)",
               fontSize: 11,
               fontWeight: 600,
               letterSpacing: "0.08em",
@@ -105,8 +105,7 @@ export default function NavMenu({ open, onClose }: Props) {
                   <ListItemText
                     primary={text}
                     primaryTypographyProps={{
-                      fontFamily:
-                        "var(--cc-font-body)",
+                      fontFamily: "var(--cc-font-body)",
                       fontSize: 14,
                       fontWeight: isActive ? 600 : 400,
                       letterSpacing: "-0.005em",
