@@ -17,7 +17,9 @@ interface UpdatesBridge {
   onAvailable: (cb: (info: { version?: string }) => void) => () => void;
   onDownloadProgress: (cb: (info: { percent: number }) => void) => () => void;
   onDownloaded: (cb: (info: { version?: string }) => void) => () => void;
+  onError: (cb: (info: { message?: string }) => void) => () => void;
   quitAndInstall: () => void;
+  checkAgain: () => void;
 }
 
 declare global {
@@ -26,7 +28,7 @@ declare global {
   }
 }
 
-type Phase = "idle" | "available" | "downloaded";
+type Phase = "idle" | "available" | "downloaded" | "error";
 
 const SlideUp = (props: SlideProps) => <Slide {...props} direction="up" />;
 
@@ -37,6 +39,9 @@ export default function UpdateNotification() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [version, setVersion] = useState<string | undefined>(undefined);
   const [percent, setPercent] = useState<number>(0);
+  const [errorMessage, setErrorMessage] = useState<string | undefined>(
+    undefined
+  );
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
@@ -57,11 +62,17 @@ export default function UpdateNotification() {
       setDismissed(false);
       setPhase("downloaded");
     });
+    const offError = bridge.onError(({ message }) => {
+      setErrorMessage(message);
+      setDismissed(false);
+      setPhase("error");
+    });
 
     return () => {
       offAvailable();
       offProgress();
       offDownloaded();
+      offError();
     };
   }, []);
 
@@ -101,12 +112,19 @@ export default function UpdateNotification() {
         onAvailable: () => () => {},
         onDownloadProgress: () => () => {},
         onDownloaded: () => () => {},
+        onError: () => () => {},
         quitAndInstall: () => {},
+        checkAgain: () => {},
       }),
       quitAndInstall: () => {
         // eslint-disable-next-line no-console
         console.log("[update test] quitAndInstall fired");
         setPhase("idle");
+      },
+      checkAgain: () => {
+        // eslint-disable-next-line no-console
+        console.log("[update test] checkAgain fired");
+        setPhase("available");
       },
     };
 
@@ -121,15 +139,25 @@ export default function UpdateNotification() {
   const open = phase !== "idle" && !dismissed;
 
   const isReady = phase === "downloaded";
-  const title = isReady
-    ? `Update ${version ?? ""} ready to install`
-    : `Downloading update${version ? ` v${version}` : ""}…`;
-  const subtitle = isReady
-    ? "Restart now or it will install on next quit."
-    : `${Math.round(percent)}% downloaded`;
+  const isError = phase === "error";
+  const title = isError
+    ? "Update failed"
+    : isReady
+      ? `Update ${version ?? ""} ready to install`
+      : `Downloading update${version ? ` v${version}` : ""}…`;
+  const subtitle = isError
+    ? (errorMessage ?? "Something went wrong downloading the update.")
+    : isReady
+      ? "Restart now or it will install on next quit."
+      : `${Math.round(percent)}% downloaded`;
 
   const handleInstall = () => {
     window.updates?.quitAndInstall();
+  };
+
+  const handleRetry = () => {
+    setPhase("idle");
+    window.updates?.checkAgain();
   };
 
   return (
@@ -160,7 +188,9 @@ export default function UpdateNotification() {
               width: 32,
               height: 32,
               borderRadius: "50%",
-              backgroundColor: CC.primaryMuted,
+              backgroundColor: isError
+                ? "rgba(196,92,92,0.15)"
+                : CC.primaryMuted,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -169,12 +199,14 @@ export default function UpdateNotification() {
           >
             <Icon
               icon={
-                isReady
-                  ? "material-symbols:check-circle-outline"
-                  : "material-symbols:download"
+                isError
+                  ? "material-symbols:error-outline"
+                  : isReady
+                    ? "material-symbols:check-circle-outline"
+                    : "material-symbols:download"
               }
               width={18}
-              color={CC.primary}
+              color={isError ? "#c45c5c" : CC.primary}
             />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -209,7 +241,7 @@ export default function UpdateNotification() {
           </IconButton>
         </Box>
 
-        {!isReady && (
+        {!isReady && !isError && (
           <LinearProgress
             variant={percent > 0 ? "determinate" : "indeterminate"}
             value={percent}
@@ -243,6 +275,36 @@ export default function UpdateNotification() {
               sx={{ fontSize: 12 }}
             >
               Restart now
+            </Button>
+          </Box>
+        )}
+
+        {isError && (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 0.5,
+              px: 1,
+              pb: 1,
+            }}
+          >
+            <Button
+              size="small"
+              variant="text"
+              onClick={() => setDismissed(true)}
+              sx={{ fontSize: 12 }}
+            >
+              Dismiss
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              onClick={handleRetry}
+              startIcon={<Icon icon="material-symbols:refresh" width={14} />}
+              sx={{ fontSize: 12 }}
+            >
+              Retry
             </Button>
           </Box>
         )}

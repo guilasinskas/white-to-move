@@ -19,5 +19,11 @@ contextBridge.exposeInMainWorld("updates", {
     ipcRenderer.on("update-downloaded", listener);
     return () => ipcRenderer.removeListener("update-downloaded", listener);
   },
+  onError: (cb) => {
+    const listener = (_e, info) => cb(info);
+    ipcRenderer.on("update-error", listener);
+    return () => ipcRenderer.removeListener("update-error", listener);
+  },
   quitAndInstall: () => ipcRenderer.send("update-quit-and-install"),
+  checkAgain: () => ipcRenderer.send("update-check-again"),
 });

@@ -316,6 +316,7 @@ function setupAutoUpdate(getWindow) {
 
   autoUpdater.on("error", (err) => {
     console.error("[updater] error:", err?.message ?? err);
+    send("update-error", { message: err?.message ?? String(err) });
   });
 
   autoUpdater.on("update-available", (info) => {
@@ -348,6 +349,15 @@ function setupAutoUpdate(getWindow) {
     } catch (err) {
       console.error("[updater] quitAndInstall failed:", err?.message ?? err);
     }
+  });
+
+  // Renderer retries after an error (e.g. once the user has closed
+  // whatever was locking the update cache, or antivirus cleared it).
+  ipcMain.on("update-check-again", () => {
+    autoUpdater.checkForUpdates().catch((err) => {
+      console.error("[updater] retry checkForUpdates failed:", err?.message ?? err);
+      send("update-error", { message: err?.message ?? String(err) });
+    });
   });
 
   // Kick off the check shortly after launch so the window is already visible.
