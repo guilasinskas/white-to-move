@@ -10,6 +10,7 @@ import { ToolbarButton } from "@/components/ToolbarButton";
 import { CopyPgnButton } from "./copyPgnButton";
 import { useAnalysisActions } from "@/hooks/useAnalysisActions";
 import ToggleEngineButton from "./toggleEngineButton";
+import ExportBrilliantClipButton from "./exportBrilliantClipButton";
 
 export default function PanelToolBar() {
   const board = useAtomValue(boardAtom);
@@ -78,6 +79,7 @@ export default function PanelToolBar() {
           <>
             <CopyPgnButton />
             <SaveButton />
+            <ExportBrilliantClipButton />
           </>
         )}
       </Stack>
@@ -100,6 +102,7 @@ export default function PanelToolBar() {
           <ToggleEngineButton />
           <CopyPgnButton />
           <SaveButton />
+          <ExportBrilliantClipButton />
         </Stack>
       )}
     </>

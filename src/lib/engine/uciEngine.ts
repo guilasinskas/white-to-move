@@ -1,6 +1,7 @@
 import { EngineName } from "@/types/enums";
 import {
   EvaluateGameParams,
+  EvaluatePositionsBatchParams,
   EvaluatePositionWithUpdateParams,
   GameEval,
   PositionEval,
@@ -252,31 +253,21 @@ export class UciEngine {
     );
   }
 
-  public async evaluateGame({
-    fens,
-    uciMoves,
-    depth = 16,
-    multiPv = this.multiPv,
-    setEvaluationProgress,
-    playersRatings,
-    workersNb = 1,
-  }: EvaluateGameParams): Promise<GameEval> {
-    this.throwErrorIfNotReady();
-    this.isReady = false;
-    setEvaluationProgress?.(1);
-
-    await this.setMultiPv(multiPv);
-    await this.sendCommandsToEachWorker(["ucinewgame", "isready"], "readyok");
-    this.setWorkersNb(workersNb);
-
+  // Shared core of evaluateGame/evaluatePositionsBatch: fans arbitrary FENs
+  // out across the worker pool, short-circuiting checkmate/stalemate without
+  // hitting the engine. Doesn't assume the FENs belong to the same game.
+  private async evaluatePositionsRaw(
+    fens: string[],
+    depth: number,
+    onProgress?: (completed: number, total: number) => void
+  ): Promise<PositionEval[]> {
     const positions: PositionEval[] = new Array(fens.length);
     let completed = 0;
 
     const updateEval = (index: number, positionEval: PositionEval) => {
       completed++;
       positions[index] = positionEval;
-      const progress = completed / fens.length;
-      setEvaluationProgress?.(99 - Math.exp(-4 * progress) * 99);
+      onProgress?.(completed, fens.length);
     };
 
     await Promise.all(
@@ -316,6 +307,35 @@ export class UciEngine {
       })
     );
 
+    return positions;
+  }
+
+  public async evaluateGame({
+    fens,
+    uciMoves,
+    depth = 16,
+    multiPv = this.multiPv,
+    setEvaluationProgress,
+    playersRatings,
+    workersNb = 1,
+  }: EvaluateGameParams): Promise<GameEval> {
+    this.throwErrorIfNotReady();
+    this.isReady = false;
+    setEvaluationProgress?.(1);
+
+    await this.setMultiPv(multiPv);
+    await this.sendCommandsToEachWorker(["ucinewgame", "isready"], "readyok");
+    this.setWorkersNb(workersNb);
+
+    const positions = await this.evaluatePositionsRaw(
+      fens,
+      depth,
+      (completed, total) => {
+        const progress = completed / total;
+        setEvaluationProgress?.(99 - Math.exp(-4 * progress) * 99);
+      }
+    );
+
     await this.setWorkersNb(1);
     this.isReady = true;
 
@@ -342,6 +362,33 @@ export class UciEngine {
         multiPv,
       },
     };
+  }
+
+  public async evaluatePositionsBatch({
+    fens,
+    depth = 16,
+    workersNb = 1,
+    setEvaluationProgress,
+  }: EvaluatePositionsBatchParams): Promise<PositionEval[]> {
+    this.throwErrorIfNotReady();
+    this.isReady = false;
+
+    await this.sendCommandsToEachWorker(["ucinewgame", "isready"], "readyok");
+    this.setWorkersNb(workersNb);
+
+    const positions = await this.evaluatePositionsRaw(
+      fens,
+      depth,
+      (completed, total) => {
+        const progress = completed / total;
+        setEvaluationProgress?.(99 - Math.exp(-4 * progress) * 99);
+      }
+    );
+
+    await this.setWorkersNb(1);
+    this.isReady = true;
+
+    return positions;
   }
 
   private async evaluatePosition(

@@ -8,6 +8,7 @@ import {
 } from "@/types/lichess";
 import { formatUciPv } from "./chess";
 import { LoadedGame } from "@/types/game";
+import { ReportGame, ReportTimeControl } from "@/types/playerReport";
 
 export const getLichessEval = async (
   fen: string,
@@ -75,6 +76,94 @@ export const getLichessUserRecentGames = async (
     .map((game) => JSON.parse(game));
 
   return games.map(formatLichessGame);
+};
+
+// Bulk export for the player report: date-ranged, time-control-filtered, up to
+// `max` games. Streams the ndjson response so callers can show fetch progress
+// instead of waiting on the full (potentially very large) body.
+export const getLichessUserGames = async (
+  username: string,
+  opts: {
+    since?: number;
+    until?: number;
+    perfType?: ReportTimeControl;
+    max?: number;
+  },
+  signal?: AbortSignal,
+  onProgress?: (count: number) => void
+): Promise<ReportGame[]> => {
+  const params = new URLSearchParams({
+    max: String(opts.max ?? 2000),
+    pgnInJson: "true",
+    sort: "dateAsc",
+    clocks: "true",
+  });
+  if (opts.since !== undefined) params.set("since", String(opts.since));
+  if (opts.until !== undefined) params.set("until", String(opts.until));
+  if (opts.perfType) params.set("perfType", opts.perfType);
+
+  const res = await fetch(
+    `https://lichess.org/api/games/user/${username}?${params}`,
+    { method: "GET", headers: { accept: "application/x-ndjson" }, signal }
+  );
+
+  if (res.status >= 400) {
+    throw new Error("Error fetching games from Lichess");
+  }
+
+  const games: ReportGame[] = [];
+  const handleLine = (line: string) => {
+    if (!line.trim()) return;
+    games.push(formatLichessReportGame(JSON.parse(line)));
+    onProgress?.(games.length);
+  };
+
+  if (!res.body) {
+    // Streaming reader unavailable — fall back to buffering the whole body.
+    const text = await res.text();
+    text.split("\n").forEach(handleLine);
+    return games;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    lines.forEach(handleLine);
+  }
+  if (buffer.trim()) handleLine(buffer);
+
+  return games;
+};
+
+const formatLichessReportGame = (data: LichessGame): ReportGame => {
+  const dateMs = data.createdAt || data.lastMoveAt || Date.now();
+  return {
+    id: data.id,
+    platform: "lichess",
+    pgn: data.pgn || "",
+    white: {
+      name: data.players.white.user?.name || "White",
+      rating: data.players.white.rating,
+      title: data.players.white.user?.title,
+    },
+    black: {
+      name: data.players.black.user?.name || "Black",
+      rating: data.players.black.rating,
+      title: data.players.black.user?.title,
+    },
+    result: getGameResult(data),
+    timeControl: `${Math.floor(data.clock?.initial / 60 || 0)}+${data.clock?.increment || 0}`,
+    dateMs,
+    movesNb: data.moves?.split(" ").length || 0,
+    url: `https://lichess.org/${data.id}`,
+    clocksCentis: data.clocks,
+  };
 };
 
 const fetchLichessEval = async (

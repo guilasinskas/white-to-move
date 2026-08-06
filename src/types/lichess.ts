@@ -36,6 +36,7 @@ export interface LichessGame {
   createdAt: number;
   lastMoveAt: number;
   status: string;
+  speed?: string;
   players: {
     white: LichessPlayer;
     black: LichessPlayer;
@@ -44,5 +45,8 @@ export interface LichessGame {
   moves: string;
   pgn: string;
   clock: LichessClock;
+  // Centiseconds remaining after each ply — present when the request passes
+  // `clocks=true`.
+  clocks?: number[];
   url?: string;
 }

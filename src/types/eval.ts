@@ -65,6 +65,16 @@ export interface EvaluateGameParams {
   workersNb?: number;
 }
 
+// Evaluates a batch of unrelated FENs in parallel across the worker pool —
+// unlike evaluateGame, the positions don't need to belong to the same game
+// (no move classification / accuracy / estimated Elo is computed).
+export interface EvaluatePositionsBatchParams {
+  fens: string[];
+  depth?: number;
+  workersNb?: number;
+  setEvaluationProgress?: (value: number) => void;
+}
+
 export interface SavedEval {
   bestMove?: string;
   lines: LineEval[];

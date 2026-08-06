@@ -147,7 +147,12 @@
       "Bash(/c/Python314/python -c 'import json,sys *)",
       "Bash(curl -s https://api.github.com/repos/guilasinskas/white-to-move/releases/tags/v0.2.0)",
       "Bash(curl -sIL https://github.com/guilasinskas/white-to-move/releases/download/v0.2.0/latest.yml)",
-      "Bash(curl -sL -w \"\\\\nHTTP_CODE:%{http_code}\\\\n\" https://github.com/guilasinskas/white-to-move/releases/download/v0.2.0/latest.yml)"
+      "Bash(curl -sL -w \"\\\\nHTTP_CODE:%{http_code}\\\\n\" https://github.com/guilasinskas/white-to-move/releases/download/v0.2.0/latest.yml)",
+      "Bash(node --check electron/main.js)",
+      "Bash(node --check electron/preload.js)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(curl -sL -w \"\\\\nHTTP_CODE:%{http_code}\\\\n\" https://github.com/guilasinskas/white-to-move/releases/download/v0.2.1/latest.yml)"
     ],
     "additionalDirectories": [
       "\\tmp"
