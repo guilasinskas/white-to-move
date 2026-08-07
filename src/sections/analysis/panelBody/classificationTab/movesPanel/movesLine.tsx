@@ -13,13 +13,12 @@ import MoveComment from "./moveComment";
 import { Icon } from "@iconify/react";
 import { Fragment, memo, useCallback, useMemo, useState } from "react";
 import { CC } from "@/constants";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useSetAtom } from "jotai";
 import {
   promoteVariationAction,
   removeNodeAction,
   setCommentAction,
 } from "../../../actions";
-import { analysisTreeAtom } from "../../../states";
 import { getCommentClock, getCommentDisplay } from "@/lib/chess";
 
 interface Props {
@@ -28,6 +27,7 @@ interface Props {
   }[];
   indent?: number;
   startNodeId: string;
+  tree: AnalysisTree;
 }
 
 interface DisplayMove {
@@ -50,9 +50,8 @@ function MovesBranchInner({
   gameEvalPositions,
   indent = 0,
   startNodeId,
+  tree,
 }: Props) {
-  const tree = useAtomValue(analysisTreeAtom);
-
   const rows = useMemo(
     () => buildRows(tree, startNodeId, gameEvalPositions),
     [gameEvalPositions, startNodeId, tree]
@@ -70,6 +69,7 @@ function MovesBranchInner({
             blackIsFirstChild={row.blackIsFirstChild}
             gameEvalPositions={gameEvalPositions}
             indent={indent}
+            tree={tree}
             whiteMove={row.white}
             whiteVariationIds={row.whiteVariationIds}
             whiteIsFirstChild={row.whiteIsFirstChild}
@@ -245,6 +245,7 @@ interface MovesLineProps {
   blackIsFirstChild: boolean;
   gameEvalPositions?: { moveClassification?: MoveClassification }[];
   indent: number;
+  tree: AnalysisTree;
   whiteMove?: DisplayMove;
   whiteVariationIds: string[];
   whiteIsFirstChild: boolean;
@@ -256,6 +257,7 @@ function MovesLine({
   blackIsFirstChild,
   gameEvalPositions,
   indent,
+  tree,
   whiteMove,
   whiteVariationIds,
   whiteIsFirstChild,
@@ -459,6 +461,7 @@ function MovesLine({
               gameEvalPositions={gameEvalPositions}
               indent={indent + 1}
               startNodeId={variationId}
+              tree={tree}
             />
           ))}
 
@@ -497,6 +500,7 @@ function MovesLine({
               gameEvalPositions={gameEvalPositions}
               indent={indent + 1}
               startNodeId={variationId}
+              tree={tree}
             />
           ))}
         </Grid>

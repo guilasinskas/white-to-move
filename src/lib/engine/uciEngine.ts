@@ -263,11 +263,19 @@ export class UciEngine {
   ): Promise<PositionEval[]> {
     const positions: PositionEval[] = new Array(fens.length);
     let completed = 0;
+    let lastProgressUpdate = 0;
+    const PROGRESS_THROTTLE_MS = 60; // Same cadence as evaluatePositionWithUpdate
 
     const updateEval = (index: number, positionEval: PositionEval) => {
       completed++;
       positions[index] = positionEval;
-      onProgress?.(completed, fens.length);
+
+      const isLast = completed === fens.length;
+      const now = performance.now();
+      if (isLast || now - lastProgressUpdate >= PROGRESS_THROTTLE_MS) {
+        lastProgressUpdate = now;
+        onProgress?.(completed, fens.length);
+      }
     };
 
     await Promise.all(

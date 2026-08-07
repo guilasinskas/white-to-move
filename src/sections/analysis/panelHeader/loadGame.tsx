@@ -20,7 +20,7 @@ import { normalizeCastling, stripPgnVariations } from "@/lib/chess";
 export default function LoadGame() {
   const router = useRouter();
   const game = useAtomValue(gameAtom);
-  const { setPgn: setGamePgn } = useChessActions(gameAtom);
+  const setGame = useSetAtom(gameAtom);
   const { resetToStartingPosition: resetBoard } = useChessActions(boardAtom);
   const { gameFromUrl } = useGameDatabase();
   const setEval = useSetAtom(gameEvalAtom);
@@ -47,7 +47,9 @@ export default function LoadGame() {
       }
 
       setEval(gameEval);
-      setGamePgn(mainlinePgn);
+      // Reuse the Chess instance already parsed above for the dedup check
+      // instead of re-parsing the same PGN a second time.
+      setGame(gameFromPgn);
       initializeFromPgn(pgn);
       resetBoard(mainlinePgn);
       setBoardOrientation(orientation ?? true);
@@ -56,7 +58,7 @@ export default function LoadGame() {
       initializeFromPgn,
       joinedGameHistory,
       resetBoard,
-      setGamePgn,
+      setGame,
       setEval,
       setBoardOrientation,
     ]
@@ -91,8 +93,7 @@ export default function LoadGame() {
       // Accept both old ("Chesskit") and new ("White to Move") Site headers
       // so games saved before the rename still flip the board correctly.
       const isLocalGame =
-        gameFromUrl.site === "White to Move" ||
-        gameFromUrl.site === "Chesskit";
+        gameFromUrl.site === "White to Move" || gameFromUrl.site === "Chesskit";
       const orientation = !(isLocalGame && gameFromUrl.black.name === "You");
       resetAndSetGamePgn(gameFromUrl.pgn, orientation, gameFromUrl.eval);
     } else if (typeof lichessGameId === "string" && !!lichessGameId) {

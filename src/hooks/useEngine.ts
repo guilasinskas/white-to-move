@@ -3,10 +3,15 @@ import { Stockfish11 } from "@/lib/engine/stockfish11";
 import { Stockfish18 } from "@/lib/engine/stockfish18";
 import { UciEngine } from "@/lib/engine/uciEngine";
 import { EngineName } from "@/types/enums";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const useEngine = (engineName: EngineName | undefined) => {
   const [engine, setEngine] = useState<UciEngine | null>(null);
+  const engineRef = useRef<UciEngine | null>(null);
+
+  useEffect(() => {
+    engineRef.current = engine;
+  }, [engine]);
 
   useEffect(() => {
     let isMounted = true;
@@ -32,6 +37,19 @@ export const useEngine = (engineName: EngineName | undefined) => {
       isMounted = false;
     };
   }, [engineName]);
+
+  // Whoever renders this hook (e.g. the "/" page) can be torn down by a
+  // route change — Next.js remounts it fresh under a new `key`. Without an
+  // unmount-time shutdown, the still-running engine/workers from the old
+  // mount keep evaluating in the background and can write stale results
+  // (progress, eval) into the shared atoms after the new page has taken
+  // over, which also leaves evaluationProgress stuck non-zero and blocks
+  // the new game from auto-analyzing.
+  useEffect(() => {
+    return () => {
+      engineRef.current?.shutdown();
+    };
+  }, []);
 
   return engine;
 };

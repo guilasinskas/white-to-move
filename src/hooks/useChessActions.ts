@@ -1,4 +1,4 @@
-import { getGameFromPgn, setGameHeaders } from "@/lib/chess";
+import { extractPgnHeaders, setGameHeaders } from "@/lib/chess";
 import { playIllegalMoveSound, playSoundFromMove } from "@/lib/sounds";
 import { Player } from "@/types/game";
 import { Chess, Move, DEFAULT_POSITION } from "chess.js";
@@ -54,7 +54,20 @@ export const useChessActions = (chessAtom: PrimitiveAtom<Chess>) => {
 
   const resetToStartingPosition = useCallback(
     (pgn?: string) => {
-      const newGame = pgn ? getGameFromPgn(pgn) : copyGame();
+      // Resetting to the starting position only needs the headers, not the
+      // move history — extracting them by regex avoids replaying the whole
+      // game through chess.js just to throw the moves away again.
+      if (pgn) {
+        const headers = extractPgnHeaders(pgn);
+        const newGame = new Chess(headers.FEN || undefined);
+        for (const [key, value] of Object.entries(headers)) {
+          newGame.setHeader(key, value);
+        }
+        setGame(newGame);
+        return;
+      }
+
+      const newGame = copyGame();
       newGame.load(newGame.getHeaders().FEN || DEFAULT_POSITION, {
         preserveHeaders: true,
       });

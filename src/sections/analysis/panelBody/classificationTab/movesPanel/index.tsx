@@ -22,13 +22,14 @@ export default function MovesPanel() {
       paddingY={1}
       sx={{ scrollbarWidth: "thin", overflowY: "auto" }}
       maxHeight="100%"
-      size={6}
+      size={12}
       id="moves-panel"
     >
       {mainlineStartId && (
         <MovesBranch
           gameEvalPositions={gameEval?.positions}
           startNodeId={mainlineStartId}
+          tree={analysisTree}
         />
       )}
 
@@ -38,6 +39,7 @@ export default function MovesPanel() {
           gameEvalPositions={gameEval?.positions}
           indent={1}
           startNodeId={variationId}
+          tree={analysisTree}
         />
       ))}
     </Grid>

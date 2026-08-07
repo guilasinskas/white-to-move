@@ -22,7 +22,7 @@ export default function MovesClassificationsRecap() {
       sx={{ scrollbarWidth: "thin", overflowY: "auto" }}
       height="100%"
       maxHeight="22rem"
-      size={6}
+      size={12}
     >
       <Grid
         container
